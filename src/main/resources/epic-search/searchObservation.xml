@@ -105,6 +105,7 @@
                               uri-template="{uri.var.base}/Observation{+uri.var.urlQuery}"/>
                     </endpoint>
                 </call>
+                <class name="org.wso2.carbon.connector.epic.ResponseValidateHandler"/>
             </else>
         </filter>
     </sequence>

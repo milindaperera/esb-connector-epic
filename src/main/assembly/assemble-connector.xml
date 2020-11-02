@@ -26,6 +26,9 @@
         <fileSet>
             <directory>target/connector/dependencies</directory>
             <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>**</include>
+            </includes>
         </fileSet>
         <fileSet>
             <directory>target/classes</directory>

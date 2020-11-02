@@ -86,5 +86,6 @@
                       uri-template="{uri.var.base}/Patient{+uri.var.urlQuery}"/>
             </endpoint>
         </call>
+        <class name="org.wso2.carbon.connector.epic.ResponseValidateHandler"/>
     </sequence>
 </template>
