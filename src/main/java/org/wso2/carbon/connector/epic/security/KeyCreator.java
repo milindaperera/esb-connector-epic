@@ -15,21 +15,21 @@
  *  specific language governing permissions and limitations
  *  under the License.
  */
+package org.wso2.carbon.connector.epic.security;
 
-package org.wso2.carbon.connector.epic;
+import org.apache.synapse.MessageContext;
+import org.wso2.carbon.connector.epic.EpicConnectorException;
+
+import java.security.PrivateKey;
 
 /**
- * This class holds constants related to EPIC connector
+ * Interface to implement key creators.
  */
-public class Constants {
-
-    public static final String EPIC_ACCESS_TOKEN = "_CONNECTOR_INTERNAL_EPIC_ACCESS_TOKEN_";
-    public static final String EPIC_CLIENT_ID = "_CONNECTOR_INTERNAL_EPIC_CLIENT_ID_";
-    public static final String EPIC_TOKEN_EP = "_CONNECTOR_INTERNAL_EPIC_TOKEN_EP_";
-    public static final String EPIC_PRIVATE_KEY = "privateKey";
-    public static final String EPIC_KEYSTORE = "keyStore";
-    public static final String EPIC_KEY_ALIAS = "privateKeyAlias";
-    public static final String EPIC_KEY_PASS = "keyStorePass";
-
-
+public interface KeyCreator {
+    /**
+     * Create and return private key object
+     * @return
+     * @throws EpicConnectorException
+     */
+    PrivateKey getKey(MessageContext context) throws EpicConnectorException;
 }

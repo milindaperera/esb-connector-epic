@@ -19,14 +19,18 @@
 <template name="init" onError="fault" xmlns="http://ws.apache.org/ns/synapse">
 	<parameter name="base" description="The service Root URL"/>
 	<parameter name="accessToken" description="Access Token if production FHIR server is being used"/>
-	<parameter name="clientId" description="Client ID of the registered application"/>
-	<parameter name="privateKey" description="Private Key of the registered application"/>
 	<parameter name="tokenEndpoint" description="Epic token Endpoint"/>
+	<parameter name="clientId" description="Client ID of the registered application"/>
+	<parameter name="privateKey" description="Private Key of the registered application inline"/>
+	<parameter name="keyStore" description="Name of the keystore which private key stored"/>
+	<parameter name="keyStorePass" description="Passphrase of the keystore"/>
+	<parameter name="privateKeyAlias" description="Alias of private key"/>
+
 	<sequence>
 		<property name="uri.var.base" expression="$func:base"/>
 		<property name="uri.var.accessToken" expression="$func:accessToken"/>
+		<property name="_CONNECTOR_INTERNAL_EPIC_ACCESS_TOKEN_" expression="$func:accessToken"/>
 		<property name="_CONNECTOR_INTERNAL_EPIC_CLIENT_ID_" expression="$func:clientId"/>
-		<property name="_CONNECTOR_INTERNAL_EPIC_PRIVATE_KEY_" expression="$func:privateKey"/>
 		<property name="_CONNECTOR_INTERNAL_EPIC_TOKEN_EP_" expression="$func:tokenEndpoint"/>
 		<filter source="boolean($ctx:uri.var.accessToken)" regex="true">
 			<then>

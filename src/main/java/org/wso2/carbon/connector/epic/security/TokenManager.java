@@ -28,7 +28,6 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpEntity;
@@ -40,16 +39,13 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.apache.synapse.MessageContext;
 import org.wso2.carbon.connector.epic.EpicConnectorException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -64,46 +60,60 @@ public class TokenManager {
     private static final Log LOG = LogFactory.getLog(TokenManager.class);
 
     private static final JsonParser parser = new JsonParser();
-    private static final Map<String, Token> tokenMap = new ConcurrentHashMap<>(4);
+    private static final Map<String, Token> TOKEN_MAP = new ConcurrentHashMap<>(2);
+
+    private TokenManager() {
+    }
 
     /**
      * Function to get access to ken for given client ID and token EP
+     *
      * @param clientId
-     * @param clientPrivateKey
      * @param tokenEP
      * @return
      * @throws EpicConnectorException
      */
-    public static Token getAccessToken(String clientId, String clientPrivateKey, String tokenEP) throws EpicConnectorException {
+    public static Token getToken(String clientId, String tokenEP) throws EpicConnectorException {
         String tokenKey = clientId + "@" + tokenEP;
-        Token token = tokenMap.get(tokenKey);
-        if (token != null && token.isActive()) {
-            return token;
-        }
-        return getNewToken(tokenKey, clientId, clientPrivateKey, tokenEP);
+        return TOKEN_MAP.get(tokenKey);
     }
 
+    /**
+     * Function to remove token from the token cache
+     *
+     * @param clientId
+     * @param tokenEP
+     */
     public static void removeToken(String clientId, String tokenEP) {
         String tokenKey = clientId + "@" + tokenEP;
-        tokenMap.remove(tokenKey);
+        TOKEN_MAP.remove(tokenKey);
+    }
+
+    /**
+     * Clean all Access tokens from the token cache
+     */
+    public static void clean() {
+        TOKEN_MAP.clear();
+        LOG.info("Token map cleaned");
     }
 
     /**
      * Function to get new token
      *
      * @param clientId
-     * @param clientPrivateKey
+     * @param keyCreator
      * @param tokenEP
      * @return
      * @throws EpicConnectorException
      */
-    private static synchronized Token getNewToken (String tokenKey, String clientId, String clientPrivateKey,
-                                                   String tokenEP) throws EpicConnectorException {
-        Token token = tokenMap.get(tokenKey);
+    public static synchronized Token getNewToken (String clientId, KeyCreator keyCreator,
+                                                   String tokenEP, MessageContext context) throws EpicConnectorException {
+        String tokenKey = clientId + "@" + tokenEP;
+        Token token = TOKEN_MAP.get(tokenKey);
         if (token == null || !token.isActive()) {
-            String jwt = generateJWT(clientId, clientPrivateKey, tokenEP);
+            String jwt = generateJWT(clientId, keyCreator, tokenEP, context);
             token = requestAccessToken(tokenEP, jwt);
-            tokenMap.put(tokenKey, token);
+            TOKEN_MAP.put(tokenKey, token);
         }
         return token;
     }
@@ -112,14 +122,14 @@ public class TokenManager {
      * Function to generate JWT
      *
      * @param clientId
-     * @param clientPrivateKey
+     * @param keyCreator
      * @param tokenEP
      * @return
      * @throws EpicConnectorException
      */
-    private static String generateJWT(String clientId, String clientPrivateKey, String tokenEP) throws EpicConnectorException {
+    private static String generateJWT(String clientId, KeyCreator keyCreator, String tokenEP, MessageContext context) throws EpicConnectorException {
         try {
-            RSAPrivateKey rsaPrivateKey = getPrivateKey(clientPrivateKey);
+            RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) keyCreator.getKey(context);
             JWSSigner signer = new RSASSASigner(rsaPrivateKey);
             long curTimeInMillis = System.currentTimeMillis();
 
@@ -144,29 +154,6 @@ public class TokenManager {
 
         } catch (JOSEException e) {
             String message = "Error occurred while signing the JWT";
-            throw new EpicConnectorException(e, message);
-        }
-    }
-
-    /**
-     * Function to get private Key from key string
-     *
-     * @param sourcePrivateKey
-     * @return
-     * @throws EpicConnectorException
-     */
-    private static RSAPrivateKey getPrivateKey(String sourcePrivateKey) throws EpicConnectorException {
-        String privateKeyPEM = sourcePrivateKey
-                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                .replaceAll(System.lineSeparator(), "")
-                .replace("-----END RSA PRIVATE KEY-----", "");
-        try {
-            byte[] encoded = Base64.decodeBase64(privateKeyPEM.getBytes());
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-            return (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            String message = "Error occurred while retrieving private key object";
             throw new EpicConnectorException(e, message);
         }
     }
