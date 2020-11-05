@@ -38,7 +38,7 @@
 			</then>
 			<else>
 				<class name="org.wso2.carbon.connector.epic.AccessTokenHandler"/>
-				<header name="Authorization" expression="fn:concat('Bearer ', $ctx:uri.var.accessToken)" scope="transport"/>
+				<header name="Authorization" expression="fn:concat('Bearer ', $ctx:_CONNECTOR_INTERNAL_EPIC_ACCESS_TOKEN_)" scope="transport"/>
 			</else>
 		</filter>
 	</sequence>

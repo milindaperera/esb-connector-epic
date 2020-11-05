@@ -94,7 +94,7 @@ public class AccessTokenHandler extends AbstractConnector {
                 }
                 token = TokenManager.getNewToken(clientId, privateKeyCreator, tokenEP, messageContext);
             }
-            messageContext.setProperty("uri.var.accessToken", token.getAccessToken());
+            messageContext.setProperty(Constants.EPIC_ACCESS_TOKEN, token.getAccessToken());
         }
     }
 }
