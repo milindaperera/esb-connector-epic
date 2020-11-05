@@ -40,7 +40,7 @@ public class KeystoreKeyCreator implements KeyCreator {
 
     private static final Log LOG = LogFactory.getLog(KeystoreKeyCreator.class);
     private static final String REG_GOV_PREFIX = "gov:";
-    private static final String REG_CONF_PREFIX = "config:";
+    private static final String REG_CONF_PREFIX = "conf:";
     private static final String REG_DEFAULT_PATH = "gov:/repository/security/key-stores/";
     private static final String FILE_PATH_PREFIX = "file:";
 
