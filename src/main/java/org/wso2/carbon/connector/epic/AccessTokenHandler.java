@@ -37,64 +37,67 @@ public class AccessTokenHandler extends AbstractConnector {
     private static final Log LOG = LogFactory.getLog(AccessTokenHandler.class);
 
     public AccessTokenHandler() {
-        //TODO clean log
-        LOG.info("AccessTokenHandler New Instance");
     }
 
     @Override
     public void connect(MessageContext messageContext) throws ConnectException {
-        String accessToken = (String) messageContext.getProperty(Constants.EPIC_ACCESS_TOKEN);
-        String clientId = (String) messageContext.getProperty(Constants.EPIC_CLIENT_ID);
-        String tokenEP = (String) messageContext.getProperty(Constants.EPIC_TOKEN_EP);
-
-        String privateKey = (String) getParameter(messageContext, Constants.EPIC_PRIVATE_KEY);
-        String keystore = (String) getParameter(messageContext, Constants.EPIC_KEYSTORE);
-        String keyAlias = (String) getParameter(messageContext, Constants.EPIC_KEY_ALIAS);
-        String keyPass = (String) getParameter(messageContext, Constants.EPIC_KEY_PASS);
-
+        String accessToken = (String) messageContext.getProperty(Constants.EPIC_PROPERTY_ACCESS_TOKEN);
         if (accessToken == null) {
-            // Parameter check
-            if (clientId == null || tokenEP == null ||
-                    (privateKey == null && (keystore == null || keyAlias == null || keyPass == null))) {
-                StringBuilder errMessageBuilder = new StringBuilder("Following parameters in init operation are missing : ");
-                if (clientId == null) {
-                    errMessageBuilder.append(" \"clientId\",");
+            accessToken = (String) getParameter(messageContext, Constants.EPIC_ACCESS_TOKEN);
+            if (accessToken == null) {
+                String clientId = (String) messageContext.getProperty(Constants.EPIC_CLIENT_ID);
+                String tokenEP = (String) messageContext.getProperty(Constants.EPIC_TOKEN_EP);
+
+                String privateKey = (String) getParameter(messageContext, Constants.EPIC_PRIVATE_KEY);
+                String keystore = (String) getParameter(messageContext, Constants.EPIC_KEYSTORE);
+                String keyAlias = (String) getParameter(messageContext, Constants.EPIC_KEY_ALIAS);
+                String keyPass = (String) getParameter(messageContext, Constants.EPIC_KEY_PASS);
+                // Parameter check
+                if (clientId == null || tokenEP == null ||
+                        (privateKey == null && (keystore == null || keyAlias == null || keyPass == null))) {
+                    StringBuilder errMessageBuilder = new StringBuilder("Following parameters in init operation are missing : ");
+                    if (clientId == null) {
+                        errMessageBuilder.append(" \"clientId\",");
+                    }
+                    if (tokenEP == null) {
+                        errMessageBuilder.append(" \"tokenEndpoint\",");
+                    }
+
+                    if (keystore != null || keyAlias != null) {
+                        if (keystore == null) {
+                            errMessageBuilder.append(" \"keyStore\",");
+                        }
+                        if (keyAlias == null) {
+                            errMessageBuilder.append(" \"privateKeyAlias\",");
+                        }
+                        if (keyPass == null) {
+                            errMessageBuilder.append(" \"keyStorePass\",");
+                        }
+                    } else if (privateKey == null) {
+                        errMessageBuilder.append(" \"privateKey\",");
+                    }
+                    String msg = errMessageBuilder.toString();
+                    LOG.error(msg);
+                    throw new EpicConnectorException(msg);
                 }
-                if (tokenEP == null) {
-                    errMessageBuilder.append(" \"tokenEndpoint\",");
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Retrieving access token from TokenManager");
                 }
 
-                if (keystore != null || keyAlias != null) {
-                    if (keystore == null) {
-                        errMessageBuilder.append(" \"keyStore\",");
+                Token token = TokenManager.getToken(clientId, tokenEP);
+                if (token == null || !token.isActive()) {
+                    KeyCreator privateKeyCreator = null;
+                    //Get new access token
+                    if (privateKey != null) {
+                        privateKeyCreator = new PlaintextKeyCreator(privateKey);
+                    } else {
+                        privateKeyCreator = new KeystoreKeyCreator(keystore, keyPass.toCharArray(), keyAlias);
                     }
-                    if (keyAlias == null) {
-                        errMessageBuilder.append(" \"privateKeyAlias\",");
-                    }
-                    if (keyPass == null) {
-                        errMessageBuilder.append(" \"keyStorePass\",");
-                    }
-                } else if (privateKey == null) {
-                    errMessageBuilder.append(" \"privateKey\",");
+                    token = TokenManager.getNewToken(clientId, privateKeyCreator, tokenEP, messageContext);
                 }
-                throw new EpicConnectorException(errMessageBuilder.toString());
+                accessToken = token.getAccessToken();
             }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Retrieving access token from TokenManager");
-            }
-
-            Token token = TokenManager.getToken(clientId, tokenEP);
-            if (token == null || !token.isActive()) {
-                KeyCreator privateKeyCreator = null;
-                //Get new access token
-                if (privateKey != null) {
-                    privateKeyCreator = new PlaintextKeyCreator(privateKey);
-                } else {
-                    privateKeyCreator = new KeystoreKeyCreator(keystore, keyPass.toCharArray(), keyAlias);
-                }
-                token = TokenManager.getNewToken(clientId, privateKeyCreator, tokenEP, messageContext);
-            }
-            messageContext.setProperty(Constants.EPIC_ACCESS_TOKEN, token.getAccessToken());
+            messageContext.setProperty(Constants.EPIC_PROPERTY_ACCESS_TOKEN, accessToken);
         }
     }
 }

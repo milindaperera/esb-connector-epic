@@ -23,9 +23,10 @@ package org.wso2.carbon.connector.epic;
  */
 public class Constants {
 
-    public static final String EPIC_ACCESS_TOKEN = "_CONNECTOR_INTERNAL_EPIC_ACCESS_TOKEN_";
+    public static final String EPIC_PROPERTY_ACCESS_TOKEN = "_CONNECTOR_INTERNAL_EPIC_ACCESS_TOKEN_";
     public static final String EPIC_CLIENT_ID = "_CONNECTOR_INTERNAL_EPIC_CLIENT_ID_";
     public static final String EPIC_TOKEN_EP = "_CONNECTOR_INTERNAL_EPIC_TOKEN_EP_";
+    public static final String EPIC_ACCESS_TOKEN = "accessToken";
     public static final String EPIC_PRIVATE_KEY = "privateKey";
     public static final String EPIC_KEYSTORE = "keyStore";
     public static final String EPIC_KEY_ALIAS = "privateKeyAlias";

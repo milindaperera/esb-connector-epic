@@ -60,7 +60,8 @@ public class TokenManager {
     private static final Log LOG = LogFactory.getLog(TokenManager.class);
 
     private static final JsonParser parser = new JsonParser();
-    private static final Map<String, Token> TOKEN_MAP = new ConcurrentHashMap<>(2);
+    private static final TokenStore TOKEN_STORE = new InMemoryTokenStore();
+    public static final String TOKEN_KEY_SEPARATOR = "_";
 
     private TokenManager() {
     }
@@ -74,8 +75,8 @@ public class TokenManager {
      * @throws EpicConnectorException
      */
     public static Token getToken(String clientId, String tokenEP) throws EpicConnectorException {
-        String tokenKey = clientId + "@" + tokenEP;
-        return TOKEN_MAP.get(tokenKey);
+        String tokenKey = clientId + TOKEN_KEY_SEPARATOR + tokenEP;
+        return TOKEN_STORE.get(tokenKey);
     }
 
     /**
@@ -85,15 +86,15 @@ public class TokenManager {
      * @param tokenEP
      */
     public static void removeToken(String clientId, String tokenEP) {
-        String tokenKey = clientId + "@" + tokenEP;
-        TOKEN_MAP.remove(tokenKey);
+        String tokenKey = clientId + TOKEN_KEY_SEPARATOR + tokenEP;
+        TOKEN_STORE.remove(tokenKey);
     }
 
     /**
      * Clean all Access tokens from the token cache
      */
     public static void clean() {
-        TOKEN_MAP.clear();
+        TOKEN_STORE.clean();
         LOG.info("Token map cleaned");
     }
 
@@ -108,12 +109,12 @@ public class TokenManager {
      */
     public static synchronized Token getNewToken (String clientId, KeyCreator keyCreator,
                                                    String tokenEP, MessageContext context) throws EpicConnectorException {
-        String tokenKey = clientId + "@" + tokenEP;
-        Token token = TOKEN_MAP.get(tokenKey);
+        String tokenKey = clientId + TOKEN_KEY_SEPARATOR + tokenEP;
+        Token token = TOKEN_STORE.get(tokenKey);
         if (token == null || !token.isActive()) {
             String jwt = generateJWT(clientId, keyCreator, tokenEP, context);
             token = requestAccessToken(tokenEP, jwt);
-            TOKEN_MAP.put(tokenKey, token);
+            TOKEN_STORE.add(tokenKey, token);
         }
         return token;
     }
